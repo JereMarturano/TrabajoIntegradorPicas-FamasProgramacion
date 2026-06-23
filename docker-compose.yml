@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  api:
+    image: picasyfamas.api
+    build:
+      context: .
+      dockerfile: src/PicasYFamas.Api/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=PicasYFamas;Username=postgres;Password=postgres
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: PicasYFamas
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
