@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Asp.Versioning;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PicasYFamas.Application.Commands.CreateGame;
 using PicasYFamas.Application.Commands.MakeGuess;
@@ -12,6 +13,7 @@ using PicasYFamas.Application.Responses;
 
 namespace PicasYFamas.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
