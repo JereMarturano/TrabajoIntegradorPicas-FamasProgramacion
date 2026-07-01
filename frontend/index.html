@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PICAS &amp; FAMAS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="scanlines" aria-hidden="true"></div>
+<canvas id="bgfx" aria-hidden="true"></canvas>
+
+<!-- Botón de configuración de servidor -->
+<button id="cfgBtn" class="cfg-btn" title="Configurar servidor" aria-label="Configurar servidor">⚙</button>
+
+<div id="cfgModal" class="modal hidden">
+  <div class="cabinet cabinet--sm">
+    <div class="cabinet__header">
+      <span class="cabinet__title">SERVIDOR</span>
+      <button class="closeBtn" data-close="cfgModal">×</button>
+    </div>
+    <div class="cabinet__body">
+      <label class="field-label" for="apiUrl">URL DE LA API</label>
+      <input id="apiUrl" class="pixel-input" type="text" placeholder="http://localhost:5163/api/game/v1">
+      <p class="hint">Por defecto: http://localhost:5163/api/game/v1</p>
+
+      <div class="cfg-options" style="margin-top: 1rem; margin-bottom: 1.2rem;">
+        <label class="field-label" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.8rem; cursor: pointer;">
+          <input type="checkbox" id="cfgCrt" class="pixel-checkbox" checked>
+          EFECTO CRT (SCANLINES)
+        </label>
+        <label class="field-label" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.8rem; cursor: pointer;">
+          <input type="checkbox" id="cfgBg" class="pixel-checkbox" checked>
+          FONDO ANIMADO
+        </label>
+        <label class="field-label" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+          <input type="checkbox" id="cfgSound" class="pixel-checkbox">
+          SONIDO (Próximamente)
+        </label>
+      </div>
+
+      <button id="saveCfgBtn" class="btn btn--gold">GUARDAR</button>
+    </div>
+  </div>
+</div>
+
+<main class="stage">
+
+  <!-- LOGO -->
+  <header class="logo" id="logoHeader">
+    <h1 class="logo__title">
+      <span class="t-cyan">PICAS</span><span class="t-cream">&amp;</span><span class="t-magenta">FAMAS</span>
+    </h1>
+    <p class="logo__sub">adivina el número secreto · 4 dígitos · sin repetir</p>
+  </header>
+
+  <!-- VISTA: AUTH -->
+  <section id="view-auth" class="view">
+    <div class="cabinet">
+      <div class="tabs">
+        <button class="tab tab--active" data-tab="login" id="tabLogin">INICIAR SESIÓN</button>
+        <button class="tab" data-tab="register" id="tabRegister">REGISTRARSE</button>
+      </div>
+
+      <div class="cabinet__body">
+
+        <!-- LOGIN FORM -->
+        <form id="loginForm" class="form" novalidate>
+          <label class="field-label" for="loginEmail">EMAIL</label>
+          <input id="loginEmail" class="pixel-input" type="email" autocomplete="email" required>
+
+          <label class="field-label" for="loginPassword">CONTRASEÑA</label>
+          <input id="loginPassword" class="pixel-input" type="password" autocomplete="current-password" required>
+
+          <p class="errMsg" id="loginError"></p>
+
+          <button type="submit" class="btn btn--magenta" id="loginSubmit">
+            <span class="btn__label">JUGAR</span>
+          </button>
+        </form>
+
+        <!-- REGISTER FORM -->
+        <form id="registerForm" class="form hidden" novalidate>
+          <div class="grid2">
+            <div>
+              <label class="field-label" for="regFirstname">NOMBRE</label>
+              <input id="regFirstname" class="pixel-input" type="text" required>
+            </div>
+            <div>
+              <label class="field-label" for="regLastname">APELLIDO</label>
+              <input id="regLastname" class="pixel-input" type="text" required>
+            </div>
+          </div>
+
+          <label class="field-label" for="regAge">EDAD</label>
+          <input id="regAge" class="pixel-input" type="number" min="1" max="120" required>
+
+          <label class="field-label" for="regEmail">EMAIL</label>
+          <input id="regEmail" class="pixel-input" type="email" autocomplete="email" required>
+
+          <label class="field-label" for="regPassword">CONTRASEÑA</label>
+          <input id="regPassword" class="pixel-input" type="password" autocomplete="new-password" required>
+
+          <p class="errMsg" id="registerError"></p>
+
+          <button type="submit" class="btn btn--cyan" id="registerSubmit">
+            <span class="btn__label">CREAR CUENTA</span>
+          </button>
+        </form>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- VISTA: JUEGO -->
+  <section id="view-game" class="view hidden">
+
+    <div class="hud">
+      <div class="hud__left">
+        <span class="hud__label">JUGADOR</span>
+        <span class="hud__value" id="playerIdShort">—</span>
+      </div>
+      <button id="logoutBtn" class="btn btn--ghost btn--xs">SALIR</button>
+    </div>
+
+    <div class="cabinet">
+      <div class="cabinet__header">
+        <span class="cabinet__title" id="gameStatusLabel">SIN PARTIDA</span>
+        <span class="cabinet__pill" id="attemptsPill">0 intentos</span>
+      </div>
+
+      <div class="cabinet__body">
+
+        <!-- Sin partida activa -->
+        <div id="noGamePanel" class="empty-panel">
+          <p class="empty-panel__text">No hay una partida activa.<br>Generá un número secreto de 4 dígitos y empezá a adivinar.</p>
+          <button id="startGameBtn" class="btn btn--gold">
+            <span class="btn__label">NUEVA PARTIDA</span>
+          </button>
+        </div>
+
+        <!-- Partida activa -->
+        <div id="gamePanel" class="hidden">
+
+          <form id="guessForm" class="guessForm" autocomplete="off">
+            <div class="digits" id="digitsRow">
+              <input class="digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-idx="0">
+              <input class="digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-idx="1">
+              <input class="digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-idx="2">
+              <input class="digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-idx="3">
+            </div>
+            <button type="submit" class="btn btn--magenta" id="guessSubmit">
+              <span class="btn__label">ADIVINAR</span>
+            </button>
+          </form>
+          <p class="errMsg" id="guessError"></p>
+
+          <div class="legend">
+            <span class="legend__item"><i class="dot dot--cyan"></i> PICA = dígito correcto, lugar incorrecto</span>
+            <span class="legend__item"><i class="dot dot--magenta"></i> FAMA = dígito correcto, lugar correcto</span>
+          </div>
+
+          <div class="scoreboard" id="scoreboard" aria-live="polite">
+            <!-- filas de intentos generadas por JS -->
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Overlay de victoria -->
+<div id="winOverlay" class="winOverlay hidden">
+  <div class="winOverlay__card">
+    <p class="winOverlay__title">¡GANASTE!</p>
+    <p class="winOverlay__sub" id="winSub"></p>
+    <button id="winPlayAgainBtn" class="btn btn--gold">JUGAR DE NUEVO</button>
+  </div>
+</div>
+
+<!-- Toast de errores generales -->
+<div id="toast" class="toast hidden"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

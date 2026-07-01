@@ -8,6 +8,7 @@ namespace PicasYFamas.Domain.Repositories;
 public interface IGameRepository
 {
     Task<Game?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<Game?> GetActiveGameByPlayerAsync(Guid playerId, CancellationToken cancellationToken = default);
     Task AddAsync(Game game, CancellationToken cancellationToken = default);
     Task UpdateAsync(Game game, CancellationToken cancellationToken = default);
     Task DeleteAsync(Game game, CancellationToken cancellationToken = default);

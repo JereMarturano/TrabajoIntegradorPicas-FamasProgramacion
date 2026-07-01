@@ -9,6 +9,7 @@ namespace PicasYFamas.Domain.Entities;
 public class Game
 {
     public Guid Id { get; private set; }
+    public Guid PlayerId { get; private set; }
     public string SecretNumberValue { get; private set; } = default!; // Stored as string for EF Core
     public GameStatus Status { get; private set; }
     public int MaxAttempts { get; private set; }
@@ -19,9 +20,10 @@ public class Game
 
     private Game() { } // EF Core
 
-    public Game(int maxAttempts = 10)
+    public Game(Guid playerId, int maxAttempts = 10)
     {
         Id = Guid.NewGuid();
+        PlayerId = playerId;
         var secretNumber = SecretNumber.GenerateRandom();
         SecretNumberValue = secretNumber.Value;
         Status = GameStatus.InProgress;

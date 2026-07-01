@@ -5,6 +5,7 @@ namespace PicasYFamas.Infrastructure.Persistence;
 
 public class AppDbContext : DbContext
 {
+    public DbSet<Player> Players => Set<Player>();
     public DbSet<Game> Games => Set<Game>();
     public DbSet<Guess> Guesses => Set<Guess>();
 
