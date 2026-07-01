@@ -4,4 +4,5 @@ using PicasYFamas.Application.DTOs;
 
 namespace PicasYFamas.Application.Commands.MakeGuess;
 
-public record MakeGuessCommand(Guid GameId, string Number) : IRequest<GuessDto>;
+public record MakeGuessCommand(Guid GameId, string AttemptedNumber) : IRequest<GuessResultDto>;
+

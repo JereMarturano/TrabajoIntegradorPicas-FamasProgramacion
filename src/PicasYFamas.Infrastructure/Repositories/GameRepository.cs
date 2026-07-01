@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using PicasYFamas.Domain.Entities;
+using PicasYFamas.Domain.Enums;
 using PicasYFamas.Domain.Repositories;
 using PicasYFamas.Infrastructure.Persistence;
 
@@ -24,6 +25,12 @@ public class GameRepository : IGameRepository
             .FirstOrDefaultAsync(g => g.Id == id, cancellationToken);
     }
 
+    public async Task<Game?> GetActiveGameByPlayerAsync(Guid playerId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Games
+            .FirstOrDefaultAsync(g => g.PlayerId == playerId && g.Status == GameStatus.InProgress, cancellationToken);
+    }
+
     public async Task AddAsync(Game game, CancellationToken cancellationToken = default)
     {
         await _context.Games.AddAsync(game, cancellationToken);
@@ -32,7 +39,8 @@ public class GameRepository : IGameRepository
 
     public async Task UpdateAsync(Game game, CancellationToken cancellationToken = default)
     {
-        _context.Games.Update(game);
+        // game is already tracked, so we just save changes.
+        // Calling Update() forces all entities (including new child Guesses) to be Modified, causing DbUpdateConcurrencyException on INSERT.
         await _context.SaveChangesAsync(cancellationToken);
     }
 
@@ -42,3 +50,4 @@ public class GameRepository : IGameRepository
         await _context.SaveChangesAsync(cancellationToken);
     }
 }
+

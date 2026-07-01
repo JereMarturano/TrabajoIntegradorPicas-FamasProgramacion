@@ -15,7 +15,6 @@ public class Guess
 
     internal Guess(string number, int picas, int famas, int attemptNumber)
     {
-        Id = Guid.NewGuid();
         Number = number;
         Picas = picas;
         Famas = famas;

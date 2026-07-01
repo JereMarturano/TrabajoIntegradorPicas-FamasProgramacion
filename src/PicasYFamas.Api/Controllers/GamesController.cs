@@ -1,7 +1,8 @@
 using System;
+using System.Security.Claims;
 using System.Threading.Tasks;
-using Asp.Versioning;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PicasYFamas.Application.Commands.CreateGame;
 using PicasYFamas.Application.Commands.MakeGuess;
@@ -13,8 +14,7 @@ using PicasYFamas.Application.Responses;
 namespace PicasYFamas.Api.Controllers;
 
 [ApiController]
-[ApiVersion("1.0")]
-[Route("api/v{version:apiVersion}/[controller]")]
+[Route("api/game/v1")]
 public class GamesController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -24,20 +24,32 @@ public class GamesController : ControllerBase
         _mediator = mediator;
     }
 
-    [HttpPost]
-    public async Task<ActionResult<ApiResponse<GameDto>>> CreateGame()
+    /// <summary>Inicia un nuevo juego. Requiere token JWT.</summary>
+    [Authorize]
+    [HttpPost("start")]
+    public async Task<ActionResult<ApiResponse<StartGameResponseDto>>> StartGame()
     {
-        var game = await _mediator.Send(new CreateGameCommand());
-        return CreatedAtAction(nameof(GetGame), new { gameId = game.GameId, version = "1.0" }, ApiResponse<GameDto>.Ok(game));
+        var playerIdClaim = User.FindFirst("playerId")?.Value
+            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (playerIdClaim == null || !Guid.TryParse(playerIdClaim, out var playerId))
+            return Unauthorized();
+
+        var result = await _mediator.Send(new CreateGameCommand(playerId));
+        return Ok(ApiResponse<StartGameResponseDto>.Ok(result));
     }
 
-    [HttpPost("{gameId:guid}/guesses")]
-    public async Task<ActionResult<ApiResponse<GuessDto>>> MakeGuess(Guid gameId, [FromBody] MakeGuessRequest request)
+    /// <summary>Realiza un intento de adivinar el número secreto. Requiere token JWT.</summary>
+    [Authorize]
+    [HttpPost("guess")]
+    public async Task<ActionResult<ApiResponse<GuessResultDto>>> Guess([FromBody] GuessRequest request)
     {
-        var guess = await _mediator.Send(new MakeGuessCommand(gameId, request.Number));
-        return Ok(ApiResponse<GuessDto>.Ok(guess));
+        var result = await _mediator.Send(new MakeGuessCommand(request.GameId, request.AttemptedNumber));
+        return Ok(ApiResponse<GuessResultDto>.Ok(result));
     }
 
+    /// <summary>Consulta el estado de un juego (no requerido por enunciado, útil para debug).</summary>
+    [Authorize]
     [HttpGet("{gameId:guid}")]
     public async Task<ActionResult<ApiResponse<GameDto>>> GetGame(Guid gameId)
     {
@@ -45,12 +57,15 @@ public class GamesController : ControllerBase
         return Ok(ApiResponse<GameDto>.Ok(game));
     }
 
+    /// <summary>Retorna todos los intentos de un juego.</summary>
+    [Authorize]
     [HttpGet("{gameId:guid}/guesses")]
-    public async Task<ActionResult<ApiResponse<object>>> GetGuesses(Guid gameId)
+    public async Task<ActionResult<ApiResponse<System.Collections.Generic.IEnumerable<GuessDto>>>> GetGuesses(Guid gameId)
     {
         var guesses = await _mediator.Send(new GetGuessesQuery(gameId));
-        return Ok(ApiResponse<object>.Ok(guesses));
+        return Ok(ApiResponse<System.Collections.Generic.IEnumerable<GuessDto>>.Ok(guesses));
     }
 }
 
-public record MakeGuessRequest(string Number);
+public record GuessRequest(Guid GameId, string AttemptedNumber);
+
